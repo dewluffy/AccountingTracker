@@ -11,3 +11,256 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  STAFF
+}
+
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum TaxStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  REVIEW
+  COMPLETED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum MonthlyTaxType {
+  VAT_PP30
+  WHT_PND1
+  WHT_PND3
+  WHT_PND53
+  SSO
+}
+
+enum AnnualTaxType {
+  PND50
+  PND51
+  FINANCIAL_STATEMENT
+}
+
+enum DocumentType {
+  TAX
+  FINANCIAL
+  CONTRACT
+  OTHER
+}
+
+model User {
+  id Int @id @default(autoincrement())
+
+  email    String @unique
+  password String
+
+  firstName String
+  lastName  String
+
+  role     UserRole @default(STAFF)
+  isActive Boolean  @default(true)
+
+  assignments  CustomerAssignment[]
+  tasks        Task[]
+  activityLogs ActivityLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Customer {
+  id Int @id @default(autoincrement())
+
+  code  String @unique
+  name  String
+  taxId String @unique
+
+  phone   String?
+  email   String?
+  address String?
+
+  note String?
+
+  status CustomerStatus @default(ACTIVE)
+
+  contacts    ContactPerson[]
+  assignments CustomerAssignment[]
+  documents   CustomerDocument[]
+
+  monthlyTaxes MonthlyTax[]
+  annualTaxes  AnnualTax[]
+
+  tasks Task[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ContactPerson {
+  id Int @id @default(autoincrement())
+
+  customerId Int
+
+  name     String
+  position String?
+
+  phone String?
+  email String?
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CustomerAssignment {
+  id Int @id @default(autoincrement())
+
+  customerId Int
+  userId     Int
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  assignedAt DateTime @default(now())
+
+  @@unique([customerId, userId])
+}
+
+model CustomerDocument {
+  id Int @id @default(autoincrement())
+
+  customerId Int
+
+  fileName String
+  fileUrl  String
+
+  documentType DocumentType
+
+  fileSize Int?
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MonthlyTax {
+  id Int @id @default(autoincrement())
+
+  customerId Int
+
+  year  Int
+  month Int
+
+  taxType MonthlyTaxType
+
+  status TaxStatus @default(NOT_STARTED)
+
+  dueDate     DateTime?
+  submittedAt DateTime?
+
+  remark String?
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([customerId, year, month, taxType])
+}
+
+model AnnualTax {
+  id Int @id @default(autoincrement())
+
+  customerId Int
+
+  year Int
+
+  taxType AnnualTaxType
+
+  status TaxStatus @default(NOT_STARTED)
+
+  dueDate     DateTime?
+  submittedAt DateTime?
+
+  remark String?
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([customerId, year, taxType])
+}
+
+model Task {
+  id Int @id @default(autoincrement())
+
+  customerId   Int
+  assignedToId Int
+
+  title       String
+  description String?
+
+  status TaskStatus @default(TODO)
+
+  priority TaskPriority @default(MEDIUM)
+
+  dueDate     DateTime?
+  completedAt DateTime?
+
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  assignedTo User     @relation(fields: [assignedToId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TaxCalendar {
+  id Int @id @default(autoincrement())
+
+  name String @unique
+
+  dueDay Int
+
+  monthly Boolean @default(true)
+  active  Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ActivityLog {
+  id Int @id @default(autoincrement())
+
+  userId Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  action String
+  module String
+
+  recordId Int?
+
+  description String?
+
+  createdAt DateTime @default(now())
+}
