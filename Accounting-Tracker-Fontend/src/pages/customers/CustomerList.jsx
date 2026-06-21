@@ -6,6 +6,7 @@ import {
 } from "react-icons/fa";
 
 import { Link } from "react-router-dom";
+import { showSuccess } from "../../utils/toast";
 import { useState } from "react";
 
 import PageHeader from "../../components/common/PageHeader";
@@ -48,22 +49,40 @@ export default function CustomerList() {
     },
   ]);
 
+  const [search, setSearch] = useState("");
+
+  const filteredCustomers = customers.filter(
+    (customer) =>
+      customer.name
+        .toLowerCase()
+        .includes(search.toLowerCase()) ||
+      customer.code
+        .toLowerCase()
+        .includes(search.toLowerCase()) ||
+      customer.taxId.includes(search)
+  );
+
   const handleDeleteClick = (customer) => {
     setSelectedCustomer(customer);
     setOpenDelete(true);
   };
 
   const handleConfirmDelete = () => {
+    const customerName = selectedCustomer?.name;
+
     setCustomers((prev) =>
       prev.filter(
         (item) => item.id !== selectedCustomer.id
       )
     );
 
+    showSuccess(
+      `${customerName} deleted successfully`
+    );
+
     setOpenDelete(false);
     setSelectedCustomer(null);
   };
-
 
 
   return (
@@ -92,24 +111,40 @@ export default function CustomerList() {
         <div className="p-6 border-b">
           <SearchInput
             placeholder="Search customer..."
+            value={search}
+            onChange={(e) =>
+              setSearch(e.target.value)
+            }
           />
+          {/* <div className="px-6 py-3 bg-slate-50 border-b text-sm text-slate-500">
+            Total Customers :
+            <span className="font-semibold ml-2">
+              {filteredCustomers.length}
+            </span>
+          </div> */}
         </div>
 
         {
-          customers.length === 0 ? (
+          filteredCustomers.length === 0 ? (
             <EmptyState
-              title="No Customers"
-              description="No customer found. Click Add Customer to create your first client."
+              title="No Customers Found"
+              description={
+                search
+                  ? "No customers match your search criteria."
+                  : "No customer found. Click Add Customer to create your first client."
+              }
               action={
-                <Link
-                  to="/customers/new"
-                  className="
-            bg-blue-600 hover:bg-blue-700
-            text-white px-4 py-2 rounded-xl
-          "
-                >
-                  Add Customer
-                </Link>
+                !search && (
+                  <Link
+                    to="/customers/new"
+                    className="
+          bg-blue-600 hover:bg-blue-700
+          text-white px-4 py-2 rounded-xl
+        "
+                  >
+                    Add Customer
+                  </Link>
+                )
               }
             />
           ) : (
@@ -146,7 +181,7 @@ export default function CustomerList() {
 
                 <tbody>
 
-                  {customers.map((customer) => (
+                  {filteredCustomers.map((customer) => (
                     <tr
                       key={customer.id}
                       className="
