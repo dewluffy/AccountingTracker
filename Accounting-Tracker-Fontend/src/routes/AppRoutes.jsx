@@ -1,8 +1,4 @@
-import {
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 
 import Login from "../pages/auth/Login";
 import Dashboard from "../pages/dashboard/Dashboard";
@@ -10,15 +6,16 @@ import UserManagement from "../pages/users/UserManagement";
 
 // Customer
 import CustomerList from "../pages/customers/CustomerList";
-import CustomerForm from "../pages/customers/CustomerForm";
 import CustomerDetail from "../pages/customers/CustomerDetail";
+import CustomerCreate from "../pages/customers/CustomerCreate";
+import CustomerEdit from "../pages/customers/CustomerEdit";
 
 // Monthly Tax
-import MonthlyTax from "../pages/taxes/MonthlyTax";
+import MonthlyTaxList from "../pages/taxes/MonthlyTaxList";
 import MonthlyTaxDetail from "../pages/taxes/MonthlyTaxDetail";
 
 // Annual Tax
-import AnnualTax from "../pages/taxes/AnnualTax";
+import AnnualTaxList from "../pages/taxes/AnnualTaxList";
 import AnnualTaxDetail from "../pages/taxes/AnnualTaxDetail";
 
 // Current Work
@@ -43,105 +40,47 @@ export default function AppRoutes() {
       {/* Protected Area */}
       <Route element={<ProtectedRoute />}>
         <Route element={<DashboardLayout />}>
-
           {/* Dashboard */}
-          <Route
-            path="/"
-            element={<Dashboard />}
-          />
+          <Route path="/" element={<Dashboard />} />
 
           {/* User Management */}
-          <Route
-            path="/users"
-            element={<UserManagement />}
-          />
+          <Route path="/users" element={<UserManagement />} />
 
           {/* Customers */}
-          <Route
-            path="/customers"
-            element={<CustomerList />}
-          />
+          <Route path="/customers" element={<CustomerList />} />
 
-          <Route
-            path="/customers/new"
-            element={<CustomerForm />}
-          />
+          <Route path="/customers/:id" element={<CustomerDetail />} />
 
-          <Route
-            path="/customers/:id"
-            element={<CustomerDetail />}
-          />
+          <Route path="/customers/new" element={<CustomerCreate />} />
 
-          <Route
-            path="/customers/:id/edit"
-            element={<CustomerForm />}
-          />
+          <Route path="/customers/:id/edit" element={<CustomerEdit />} />
 
           {/* Monthly Tax */}
-          <Route
-            path="/taxes/monthly"
-            element={<MonthlyTax />}
-          />
+          <Route path="/taxes/monthly" element={<MonthlyTaxList />} />
 
-          <Route
-            path="/taxes/monthly/:id"
-            element={<MonthlyTaxDetail />}
-          />
-
-          <Route
-            path="/taxes/monthly/:month/customer/:id"
-            element={<MonthlyTaxDetail />}
-          />
+          <Route path="/taxes/monthly/:id" element={<MonthlyTaxDetail />} />
 
           {/* Annual Tax */}
-          <Route
-            path="/taxes/annual"
-            element={<AnnualTax />}
-          />
+          <Route path="/taxes/annual" element={<AnnualTaxList />} />
 
-          <Route
-            path="/taxes/annual/:id"
-            element={<AnnualTaxDetail />}
-          />
-
-          <Route
-            path="/taxes/annual/:year/customer/:id"
-            element={<AnnualTaxDetail />}
-          />
+          <Route path="/taxes/annual/:id" element={<AnnualTaxDetail />} />
 
           {/* Current Work */}
-          <Route
-            path="/tasks"
-            element={<WorkBoard />}
-          />
+          <Route path="/tasks" element={<WorkBoard />} />
 
-          <Route
-            path="/tasks/:id"
-            element={<WorkDetail />}
-          />
-
-          <Route
-            path="/tasks/:month/customer/:id"
-            element={<WorkDetail />}
-          />
+          <Route path="/tasks/:id" element={<WorkDetail />} />
 
           {/* Reports */}
-          <Route
-            path="/reports"
-            element={<Reports />}
-          />
+          <Route path="/reports" element={<Reports />} />
 
         </Route>
       </Route>
 
       {/* Redirect */}
-      <Route
-        path="*"
-        element={<Navigate to="/" replace />}
-      />
+      {/* <Route path="*" element={<Navigate to="/" replace />} /> */}
 
-      {/* หรือถ้าต้องการหน้า 404 จริง ๆ ใช้อันนี้แทน */}
-      {/* <Route path="*" element={<NotFound />} /> */}
+      {/* Not Found */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

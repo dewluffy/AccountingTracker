@@ -30,10 +30,9 @@ enum TaxStatus {
   OVERDUE
 }
 
-enum TaskStatus {
-  TODO
+enum WorkStatus {
   IN_PROGRESS
-  REVIEW
+  PENDING
   COMPLETED
 }
 
@@ -211,6 +210,24 @@ model AnnualTax {
   @@unique([customerId, year, taxType])
 }
 
+model CustomerMonthlyWork {
+  id Int @id @default(autoincrement())
+
+  customerId Int
+
+  year Int
+  month Int
+
+  expenseStatus WorkStatus
+  incomeStatus WorkStatus
+  bankStatus WorkStatus
+
+  updatedBy Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Task {
   id Int @id @default(autoincrement())
 
@@ -220,7 +237,7 @@ model Task {
   title       String
   description String?
 
-  status TaskStatus @default(TODO)
+  // status TaskStatus @default(TODO)
 
   priority TaskPriority @default(MEDIUM)
 

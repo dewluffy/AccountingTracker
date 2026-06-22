@@ -1,58 +1,89 @@
-import { useParams } from "react-router-dom";
-
-import PageHeader from "../../components/common/PageHeader";
-import TaxChecklist from "../../components/taxes/TaxChecklist";
+import Breadcrumb from "../../components/common/Breadcrumb";
+import InfoRow from "../../components/common/InfoRow";
+import StatusBadge from "../../components/common/StatusBadge";
 
 export default function MonthlyTaxDetail() {
-  const { month } = useParams();
+  const tax = {
+    customer: "ABC Co.,Ltd.",
+    taxType: "VAT PP30",
+    month: "May",
+    year: 2026,
+    dueDate: "15 Jun 2026",
+    submittedDate: "10 Jun 2026",
+    status: "Completed",
+    remark: "Submitted successfully",
+  };
 
   return (
     <div className="space-y-6">
 
-      <PageHeader
-        title="ABC Co.,Ltd."
-        description={`Monthly Tax • ${month}`}
+      <Breadcrumb
+        items={[
+          {
+            label: "Monthly Taxes",
+            to: "/taxes/monthly",
+          },
+          {
+            label: tax.customer,
+          },
+        ]}
       />
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="bg-white rounded-2xl border p-6">
 
-        <TaxChecklist
-          title="VAT (ภ.พ.30)"
-          items={[
-            "รับเอกสาร",
-            "ตรวจสอบ",
-            "จัดทำแบบ",
-            "ยื่นภาษี",
-            "ส่งหลักฐาน",
-          ]}
-        />
+        <h2 className="text-2xl font-bold mb-6">
+          Monthly Tax Detail
+        </h2>
 
-        <TaxChecklist
-          title="PND3"
-          items={[
-            "รับเอกสาร",
-            "ตรวจสอบ",
-            "ยื่นภาษี",
-          ]}
-        />
+        <div className="grid md:grid-cols-2 gap-6">
 
-        <TaxChecklist
-          title="PND53"
-          items={[
-            "รับเอกสาร",
-            "ตรวจสอบ",
-            "ยื่นภาษี",
-          ]}
-        />
+          <InfoRow
+            label="Customer"
+            value={tax.customer}
+          />
 
-        <TaxChecklist
-          title="SSO"
-          items={[
-            "ตรวจสอบเงินเดือน",
-            "จัดทำรายงาน",
-            "ยื่นประกันสังคม",
-          ]}
-        />
+          <InfoRow
+            label="Tax Type"
+            value={tax.taxType}
+          />
+
+          <InfoRow
+            label="Period"
+            value={`${tax.month} ${tax.year}`}
+          />
+
+          <InfoRow
+            label="Due Date"
+            value={tax.dueDate}
+          />
+
+          <InfoRow
+            label="Submitted Date"
+            value={tax.submittedDate}
+          />
+
+          <InfoRow
+            label="Status"
+            value={
+              <StatusBadge
+                status={tax.status}
+              />
+            }
+          />
+
+        </div>
+
+        <div className="mt-8">
+
+          <p className="text-sm text-slate-500 mb-2">
+            Remark
+          </p>
+
+          <div className="bg-slate-50 rounded-xl p-4">
+            {tax.remark}
+          </div>
+
+        </div>
 
       </div>
 
