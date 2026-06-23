@@ -114,7 +114,7 @@ export default function WorkBoard() {
   cursor-pointer
 "
                     >
-                      <FaEdit />
+                      Update
                     </Button>
                   </td>
                 </tr>
