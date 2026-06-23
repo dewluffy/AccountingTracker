@@ -4,6 +4,7 @@ import cors from "cors";
 import notFound from "./utils/notFound.js";
 import { error } from "./utils/error.js";
 import authRouter from "./routers/auth.router.js";
+import customerRouter from "./routers/customer.router.js";
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -13,6 +14,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api/auth",authRouter);
+app.use("/api/customers", customerRouter);
 
 app.use(notFound);
 app.use(error);
