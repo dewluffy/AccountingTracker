@@ -1,92 +1,220 @@
+import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import Swal from "sweetalert2";
+
+import PageHeader from "../../components/common/PageHeader";
 import Breadcrumb from "../../components/common/Breadcrumb";
-import InfoRow from "../../components/common/InfoRow";
-import StatusBadge from "../../components/common/StatusBadge";
+import Button from "../../components/common/Button";
 
 export default function MonthlyTaxDetail() {
-  const tax = {
-    customer: "ABC Co.,Ltd.",
-    taxType: "VAT PP30",
-    month: "May",
-    year: 2026,
-    dueDate: "15 Jun 2026",
-    submittedDate: "10 Jun 2026",
-    status: "Completed",
-    remark: "Submitted successfully",
+  const navigate = useNavigate();
+  const { id } = useParams();
+
+  const [saving, setSaving] = useState(false);
+
+  const [taxes, setTaxes] = useState([
+    {
+      taxType: "ภงด.1",
+      status: "COMPLETED",
+      submittedDate: "2026-06-15",
+      remark: "",
+    },
+    {
+      taxType: "ภงด.3",
+      status: "IN_PROGRESS",
+      submittedDate: "",
+      remark: "",
+    },
+    {
+      taxType: "ภงด.53",
+      status: "COMPLETED",
+      submittedDate: "2026-06-15",
+      remark: "",
+    },
+    {
+      taxType: "ภงด.54",
+      status: "NOT_REQUIRED",
+      submittedDate: "",
+      remark: "",
+    },
+    {
+      taxType: "ภพ.30",
+      status: "COMPLETED",
+      submittedDate: "2026-06-15",
+      remark: "",
+    },
+    {
+      taxType: "ภพ.36",
+      status: "NOT_REQUIRED",
+      submittedDate: "",
+      remark: "",
+    },
+    {
+      taxType: "ประกันสังคม",
+      status: "COMPLETED",
+      submittedDate: "2026-06-15",
+      remark: "",
+    },
+  ]);
+
+  const handleChange = (index, field, value) => {
+    const updated = [...taxes];
+
+    updated[index][field] = value;
+
+    if (field === "status" && value === "NOT_REQUIRED") {
+      updated[index].submittedDate = "";
+    }
+
+    setTaxes(updated);
+  };
+
+  const isDateDisabled = (status) => {
+    return status === "NOT_REQUIRED" || status === "NOT_STARTED";
+  };
+
+  const handleSave = async () => {
+    const result = await Swal.fire({
+      title: "Save Changes?",
+      text: "Do you want to save monthly tax status?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Save",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#2563eb",
+      cancelButtonColor: "#6b7280",
+    });
+
+    if (result.isConfirmed) {
+      setSaving(true);
+
+      // TODO: เรียก API จริงตรงนี้
+      await new Promise((res) => setTimeout(res, 500));
+
+      setSaving(false);
+
+      await Swal.fire({
+        title: "Saved!",
+        text: "Monthly tax updated successfully.",
+        icon: "success",
+        confirmButtonColor: "#2563eb",
+      });
+
+      navigate("/taxes/monthly");
+    }
   };
 
   return (
     <div className="space-y-6">
-
       <Breadcrumb
         items={[
-          {
-            label: "Monthly Taxes",
-            to: "/taxes/monthly",
-          },
-          {
-            label: tax.customer,
-          },
+          { label: "Monthly Tax", to: "/taxes/monthly" },
+          
+          { label: `Customer ${id}` },
         ]}
       />
 
-      <div className="bg-white rounded-2xl border p-6">
+      <PageHeader title="Monthly Tax Detail" description={`Record #${id}`} />
 
-        <h2 className="text-2xl font-bold mb-6">
-          Monthly Tax Detail
-        </h2>
+      {/* Customer Information */}
+      <div className="bg-white border rounded-2xl p-6 shadow-sm">
+        <h3 className="text-lg font-semibold mb-6">Customer Information</h3>
 
-        <div className="grid md:grid-cols-2 gap-6">
-
-          <InfoRow
-            label="Customer"
-            value={tax.customer}
-          />
-
-          <InfoRow
-            label="Tax Type"
-            value={tax.taxType}
-          />
-
-          <InfoRow
-            label="Period"
-            value={`${tax.month} ${tax.year}`}
-          />
-
-          <InfoRow
-            label="Due Date"
-            value={tax.dueDate}
-          />
-
-          <InfoRow
-            label="Submitted Date"
-            value={tax.submittedDate}
-          />
-
-          <InfoRow
-            label="Status"
-            value={
-              <StatusBadge
-                status={tax.status}
-              />
-            }
-          />
-
-        </div>
-
-        <div className="mt-8">
-
-          <p className="text-sm text-slate-500 mb-2">
-            Remark
-          </p>
-
-          <div className="bg-slate-50 rounded-xl p-4">
-            {tax.remark}
+        <div className="grid md:grid-cols-3 gap-6">
+          <div>
+            <p className="text-sm text-gray-500">Customer</p>
+            <p className="font-medium">ABC Co.,Ltd.</p>
           </div>
 
-        </div>
+          <div>
+            <p className="text-sm text-gray-500">Month / Year</p>
+            <p className="font-medium">05 / 2026</p>
+          </div>
 
+          <div>
+            <p className="text-sm text-gray-500">Responsible</p>
+            <p className="font-medium">John Smith</p>
+          </div>
+        </div>
       </div>
 
+      {/* Tax Forms */}
+      <div className="bg-white border rounded-2xl shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[1000px]">
+            <thead>
+              <tr className="bg-slate-50 border-b">
+                <th className="px-4 py-4 text-left">Tax Form</th>
+                <th className="px-4 py-4 text-left">Status</th>
+                <th className="px-4 py-4 text-left">Submitted Date</th>
+                <th className="px-4 py-4 text-left">Remark</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {taxes.map((item, index) => (
+                <tr key={item.taxType} className="border-b hover:bg-slate-50">
+                  <td className="px-4 py-4 font-medium">{item.taxType}</td>
+
+                  <td className="px-4 py-4">
+                    <select
+                      value={item.status}
+                      onChange={(e) =>
+                        handleChange(index, "status", e.target.value)
+                      }
+                      className="border rounded-lg px-3 py-2 bg-white"
+                    >
+                      <option value="NOT_STARTED">NOT_STARTED</option>
+                      <option value="IN_PROGRESS">IN_PROGRESS</option>
+                      <option value="COMPLETED">COMPLETED</option>
+                      <option value="NOT_REQUIRED">NOT_REQUIRED</option>
+                    </select>
+                  </td>
+
+                  <td className="px-4 py-4">
+                    <input
+                      type="date"
+                      value={item.submittedDate}
+                      onChange={(e) =>
+                        handleChange(index, "submittedDate", e.target.value)
+                      }
+                      disabled={isDateDisabled(item.status)}
+                      className="border rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                    />
+                  </td>
+
+                  <td className="px-4 py-4">
+                    <input
+                      type="text"
+                      value={item.remark}
+                      onChange={(e) =>
+                        handleChange(index, "remark", e.target.value)
+                      }
+                      placeholder="Remark..."
+                      className="w-full border rounded-lg px-3 py-2"
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Action */}
+      <div className="flex justify-end gap-3">
+        <Button
+          variant="outline"
+          onClick={() => navigate("/taxes/monthly")}
+          disabled={saving}
+        >
+          Back
+        </Button>
+
+        <Button onClick={handleSave} disabled={saving}>
+          {saving ? "Saving..." : "Save Changes"}
+        </Button>
+      </div>
     </div>
   );
 }
