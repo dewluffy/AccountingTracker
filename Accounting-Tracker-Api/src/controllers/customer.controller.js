@@ -3,7 +3,7 @@ import { createCustomerService, deleteCustomerService, getCustomerByIdService, g
 
 export const createCustomerController = async (req, res, next) => {
   try {
-    const customer = await createCustomerService(req.body);
+    const customer = await createCustomerService(req.body, req.user.id);
 
     return res.status(201).json({
       success: true,
@@ -52,7 +52,7 @@ export const updateCustomerController = async (req, res, next) => {
   try {
     const { customerId } = req.params;
 
-    const customer = await updateCustomerService(customerId, req.body);
+    const customer = await updateCustomerService(customerId, req.body, req.user.id);
 
     return res.status(200).json({
       success: true,
@@ -69,7 +69,7 @@ export const deleteCustomerController = async (req, res, next) => {
   try {
     const { customerId } = req.params;
 
-    const customer = await deleteCustomerService(customerId);
+    const customer = await deleteCustomerService(customerId, req.user.id);
 
     return res.status(200).json({
       success: true,

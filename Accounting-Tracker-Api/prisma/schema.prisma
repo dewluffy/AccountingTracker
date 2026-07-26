@@ -30,15 +30,29 @@ enum CustomerStatus {
 
 enum TaxStatus {
   NOT_STARTED
+  WAITING_DOCS
   IN_PROGRESS
+  WAITING_PAYMENT
   COMPLETED
-  OVERDUE
 }
 
 enum WorkStatus {
-  IN_PROGRESS
   PENDING
+  IN_PROGRESS
   COMPLETED
+  WAITING
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  REVIEW
+  COMPLETED
+}
+
+enum StaffRole {
+  PRIMARY
+  SECONDARY
 }
 
 enum TaskPriority {
@@ -110,6 +124,7 @@ model Customer {
 
   monthlyTaxes MonthlyTax[]
   annualTaxes  AnnualTax[]
+  monthlyWork  CustomerMonthlyWork[]
 
   tasks Task[]
 
@@ -139,6 +154,8 @@ model CustomerAssignment {
 
   customerId Int
   userId     Int
+
+  staffRole StaffRole @default(SECONDARY)
 
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -220,17 +237,29 @@ model CustomerMonthlyWork {
 
   customerId Int
 
-  year  Int
-  month Int
+  expenseMonth  Int?
+  expenseYear   Int?
+  expenseStatus WorkStatus @default(PENDING)
+  expenseRemark String?
 
-  expenseStatus WorkStatus
-  incomeStatus  WorkStatus
-  bankStatus    WorkStatus
+  incomeMonth  Int?
+  incomeYear   Int?
+  incomeStatus WorkStatus @default(PENDING)
+  incomeRemark String?
+
+  bankMonth  Int?
+  bankYear   Int?
+  bankStatus WorkStatus @default(PENDING)
+  bankRemark String?
 
   updatedBy Int?
 
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([customerId])
 }
 
 model Task {
@@ -242,7 +271,7 @@ model Task {
   title       String
   description String?
 
-  // status TaskStatus @default(TODO)
+  status TaskStatus @default(TODO)
 
   priority TaskPriority @default(MEDIUM)
 

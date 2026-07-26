@@ -64,7 +64,9 @@ export default function Navbar() {
 
       <div className="text-right">
         <p className="font-medium">
-          {user?.name}
+          {[user?.firstName, user?.lastName]
+            .filter(Boolean)
+            .join(" ")}
         </p>
 
         <p className="text-sm text-gray-500">

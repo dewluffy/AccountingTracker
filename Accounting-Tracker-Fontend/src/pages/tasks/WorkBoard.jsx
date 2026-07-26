@@ -1,47 +1,55 @@
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { FaSearch } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import Button from "../../components/common/Button";
-import { FaEdit } from "react-icons/fa";
 
 import PageHeader from "../../components/common/PageHeader";
-import StatusBadge from "../../components/common/StatusBadge";
+import StatusDot from "../../components/common/StatusDot";
+import StatusLegend from "../../components/common/StatusLegend";
+import Button from "../../components/common/Button";
+import { getWorkBoard } from "../../api/work.api";
+import { WORK_STATUSES } from "../../utils/workStatuses";
+import { formatRelativeDate } from "../../utils/formatRelativeDate";
+import { showError } from "../../utils/toast";
+
+const formatMonthYear = (section) => {
+  if (!section?.month || !section?.year) return "-";
+
+  return `${String(section.month).padStart(2, "0")}/${String(
+    section.year
+  ).slice(-2)}`;
+};
 
 export default function WorkBoard() {
   const navigate = useNavigate();
 
-  const works = [
-    {
-      id: 1,
-      customer: "ABC Co.,Ltd.",
-      assignee: "John Smith",
-      expenseMonth: "05/26",
-      incomeMonth: "05/26",
-      bankMonth: "05/26",
-      status: "IN_PROGRESS",
-      updatedAt: "Today",
-    },
-    {
-      id: 2,
-      customer: "XYZ Co.,Ltd.",
-      assignee: "John Smith",
-      expenseMonth: "05/26",
-      incomeMonth: "-",
-      bankMonth: "-",
-      status: "PENDING",
-      updatedAt: "Today",
-    },
-    {
-      id: 3,
-      customer: "DEF Trading",
-      assignee: "John Smith",
-      expenseMonth: "04/26",
-      incomeMonth: "04/26",
-      bankMonth: "04/26",
-      status: "COMPLETED",
-      updatedAt: "2 Days Ago",
-    },
-  ];
+  const [works, setWorks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    const fetchBoard = async () => {
+      try {
+        setLoading(true);
+
+        const result = await getWorkBoard();
+
+        setWorks(result.data.board);
+      } catch (err) {
+        showError(
+          err.response?.data?.message ||
+            "Failed to load work board"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBoard();
+  }, []);
+
+  const filtered = works.filter((item) =>
+    item.customerName.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
@@ -50,6 +58,11 @@ export default function WorkBoard() {
         description="Track your assigned accounting work"
       />
 
+      {/* Legend */}
+      <div className="bg-white border rounded-2xl p-5 shadow-sm">
+        <StatusLegend statuses={WORK_STATUSES} />
+      </div>
+
       {/* Search */}
       <div className="bg-white border rounded-2xl p-5 shadow-sm">
         <div className="relative max-w-md">
@@ -57,6 +70,8 @@ export default function WorkBoard() {
 
           <input
             type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             placeholder="Search customer..."
             className="w-full border rounded-xl pl-11 pr-4 py-3 focus:ring-2 focus:ring-blue-500"
           />
@@ -82,30 +97,51 @@ export default function WorkBoard() {
             </thead>
 
             <tbody>
-              {works.map((item, index) => (
-                <tr key={item.id} className="border-b hover:bg-slate-50">
-                  <td className="px-6 py-4">{index + 1}</td>
-
-                  <td className="px-6 py-4 font-medium">{item.customer}</td>
-
-                  <td className="px-6 py-4 text-gray-700">{item.assignee}</td>
-
-                  <td className="px-6 py-4 text-center">{item.expenseMonth}</td>
-
-                  <td className="px-6 py-4 text-center">{item.incomeMonth}</td>
-
-                  <td className="px-6 py-4 text-center">{item.bankMonth}</td>
-
-                  <td className="px-6 py-4 text-center">
-                    <StatusBadge status={item.status} />
+              {loading ? (
+                <tr>
+                  <td colSpan={9} className="px-6 py-10 text-center text-gray-400">
+                    Loading...
                   </td>
+                </tr>
+              ) : filtered.length > 0 ? (
+                filtered.map((item, index) => (
+                  <tr key={item.customerId} className="border-b hover:bg-slate-50">
+                    <td className="px-6 py-4">{index + 1}</td>
 
-                  <td className="px-6 py-4 text-center">{item.updatedAt}</td>
+                    <td className="px-6 py-4 font-medium">{item.customerName}</td>
 
-                  <td className="px-6 py-4 text-center">
-                    <Button
-                      onClick={() => navigate(`/tasks/${item.id}`)}
-                      className="
+                    <td className="px-6 py-4 text-gray-700">
+                      {item.responsible
+                        ? `${item.responsible.firstName} ${item.responsible.lastName}`
+                        : "-"}
+                    </td>
+
+                    <td className="px-6 py-4 text-center">
+                      {formatMonthYear(item.expense)}
+                    </td>
+
+                    <td className="px-6 py-4 text-center">
+                      {formatMonthYear(item.income)}
+                    </td>
+
+                    <td className="px-6 py-4 text-center">
+                      {formatMonthYear(item.bank)}
+                    </td>
+
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex justify-center">
+                        <StatusDot status={item.status} />
+                      </div>
+                    </td>
+
+                    <td className="px-6 py-4 text-center">
+                      {formatRelativeDate(item.updatedAt)}
+                    </td>
+
+                    <td className="px-6 py-4 text-center">
+                      <Button
+                        onClick={() => navigate(`/tasks/${item.customerId}`)}
+                        className="
   bg-blue-600 text-white
   p-2 rounded-lg
   hover:bg-blue-700
@@ -113,12 +149,19 @@ export default function WorkBoard() {
   hover:scale-105
   cursor-pointer
 "
-                    >
-                      Update
-                    </Button>
+                      >
+                        Update
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={9} className="px-6 py-10 text-center text-gray-400">
+                    No customers found
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

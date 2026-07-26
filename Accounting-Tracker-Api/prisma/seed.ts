@@ -1,10 +1,10 @@
 import bcrypt from "bcryptjs";
 import prisma from "../src/config/prisma.js";
 
-const main = async () => {
+async function main() {
   const hashedPassword = await bcrypt.hash("123456", 10);
 
-  const admin = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: {
       email: "admin@test.com",
     },
@@ -19,14 +19,11 @@ const main = async () => {
     },
   });
 
-  console.log("Admin user seeded successfully:", admin.email);
-};
+  console.log("✅ Admin seeded");
+}
 
 main()
-  .catch((error) => {
-    console.error("Seed error:", error);
-    process.exit(1);
-  })
+  .catch(console.error)
   .finally(async () => {
     await prisma.$disconnect();
   });

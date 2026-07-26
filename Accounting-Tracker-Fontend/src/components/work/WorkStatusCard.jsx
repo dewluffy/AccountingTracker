@@ -1,28 +1,14 @@
-import { useState } from "react";
-
 export default function WorkStatusCard({
   title,
   value,
   onChange,
 }) {
-  const [form, setForm] = useState({
-    month: value?.month || "",
-    year: value?.year || "",
-    status: value?.status || "PENDING",
-    remark: value?.remark || "",
-  });
-
   const handleChange = (e) => {
-    const { name, value } = e.target;
-
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    const { name, value: fieldValue } = e.target;
 
     onChange?.({
-      ...form,
-      [name]: value,
+      ...value,
+      [name]: fieldValue,
     });
   };
 
@@ -44,7 +30,7 @@ export default function WorkStatusCard({
 
           <select
             name="month"
-            value={form.month}
+            value={value?.month || ""}
             onChange={handleChange}
             className="w-full border rounded-xl px-3 py-2"
           >
@@ -64,7 +50,7 @@ export default function WorkStatusCard({
 
           <input
             name="year"
-            value={form.year}
+            value={value?.year || ""}
             onChange={handleChange}
             placeholder="2026"
             className="w-full border rounded-xl px-3 py-2"
@@ -81,13 +67,14 @@ export default function WorkStatusCard({
 
         <select
           name="status"
-          value={form.status}
+          value={value?.status || "PENDING"}
           onChange={handleChange}
           className="w-full border rounded-xl px-3 py-2"
         >
           <option value="PENDING">Pending</option>
           <option value="IN_PROGRESS">In Progress</option>
           <option value="COMPLETED">Completed</option>
+          <option value="WAITING">Waiting</option>
         </select>
       </div>
 
@@ -99,7 +86,7 @@ export default function WorkStatusCard({
 
         <textarea
           name="remark"
-          value={form.remark}
+          value={value?.remark || ""}
           onChange={handleChange}
           rows={3}
           className="w-full border rounded-xl px-3 py-2"

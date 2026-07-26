@@ -1,7 +1,8 @@
 import prisma from "../config/prisma.js";
 import { createError } from "../utils/createError.js";
+import { logActivity } from "./activityLog.service.js";
 
-export const createCustomerService = async (data) => {
+export const createCustomerService = async (data, userId) => {
   const { code, name, taxId, phone, email, address, status } = data;
 
   const existingCustomer = await prisma.customer.findFirst({
@@ -32,12 +33,36 @@ export const createCustomerService = async (data) => {
     },
   });
 
+  await logActivity({
+    userId,
+    action: "CREATE_CUSTOMER",
+    module: "customer",
+    recordId: customer.id,
+    description: `Created customer ${customer.name}`,
+  });
+
   return customer;
 };
 export const getCustomersService = async () => {
   const customers = await prisma.customer.findMany({
     orderBy: {
       createdAt: "desc",
+    },
+    include: {
+      assignments: {
+        where: {
+          staffRole: "PRIMARY",
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -56,7 +81,7 @@ export const getCustomerByIdService = async (customerId) => {
 
   return customer;
 };
-export const updateCustomerService = async (customerId, data) => {
+export const updateCustomerService = async (customerId, data, userId) => {
   const customer = await prisma.customer.findUnique({
     where: {
       id: customerId,
@@ -108,9 +133,17 @@ export const updateCustomerService = async (customerId, data) => {
     data: updateData,
   });
 
+  await logActivity({
+    userId,
+    action: "UPDATE_CUSTOMER",
+    module: "customer",
+    recordId: updatedCustomer.id,
+    description: `Updated customer ${updatedCustomer.name}`,
+  });
+
   return updatedCustomer;
 };
-export const deleteCustomerService = async (customerId) => {
+export const deleteCustomerService = async (customerId, userId) => {
   const id = Number(customerId);
 
   const customer = await prisma.customer.findUnique({
@@ -127,6 +160,14 @@ export const deleteCustomerService = async (customerId) => {
     where: {
       id,
     },
+  });
+
+  await logActivity({
+    userId,
+    action: "DELETE_CUSTOMER",
+    module: "customer",
+    recordId: id,
+    description: `Deleted customer ${customer.name}`,
   });
 
   return customer;

@@ -1,77 +1,91 @@
-import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import Swal from "sweetalert2";
 
 import PageHeader from "../../components/common/PageHeader";
 import Breadcrumb from "../../components/common/Breadcrumb";
 import Button from "../../components/common/Button";
+import {
+  getMonthlyTaxByCustomer,
+  updateMonthlyTax,
+} from "../../api/monthlyTax.api";
+import { MONTHLY_TAX_TYPES } from "../../utils/monthlyTaxTypes";
+import { showError } from "../../utils/toast";
+
+const toDateInputValue = (value) => {
+  if (!value) return "";
+
+  return value.slice(0, 10);
+};
 
 export default function MonthlyTaxDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
 
+  const year = searchParams.get("year");
+  const month = searchParams.get("month");
+
+  const [customer, setCustomer] = useState(null);
+  const [responsible, setResponsible] = useState(null);
+  const [taxes, setTaxes] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const [taxes, setTaxes] = useState([
-    {
-      taxType: "ภงด.1",
-      status: "COMPLETED",
-      submittedDate: "2026-06-15",
-      remark: "",
-    },
-    {
-      taxType: "ภงด.3",
-      status: "IN_PROGRESS",
-      submittedDate: "",
-      remark: "",
-    },
-    {
-      taxType: "ภงด.53",
-      status: "COMPLETED",
-      submittedDate: "2026-06-15",
-      remark: "",
-    },
-    {
-      taxType: "ภงด.54",
-      status: "NOT_REQUIRED",
-      submittedDate: "",
-      remark: "",
-    },
-    {
-      taxType: "ภพ.30",
-      status: "COMPLETED",
-      submittedDate: "2026-06-15",
-      remark: "",
-    },
-    {
-      taxType: "ภพ.36",
-      status: "NOT_REQUIRED",
-      submittedDate: "",
-      remark: "",
-    },
-    {
-      taxType: "ประกันสังคม",
-      status: "COMPLETED",
-      submittedDate: "2026-06-15",
-      remark: "",
-    },
-  ]);
+  useEffect(() => {
+    const fetchDetail = async () => {
+      try {
+        const result = await getMonthlyTaxByCustomer(id, year, month);
+
+        setCustomer(result.data.customer);
+        setResponsible(result.data.responsible);
+
+        setTaxes(
+          MONTHLY_TAX_TYPES.map(({ taxType, label }) => {
+            const record = result.data.items.find(
+              (item) => item?.taxType === taxType
+            );
+
+            return {
+              taxType,
+              label,
+              status: record?.status || "NOT_STARTED",
+              submittedDate: toDateInputValue(record?.submittedAt),
+              remark: record?.remark || "",
+            };
+          })
+        );
+      } catch (err) {
+        showError(
+          err.response?.data?.message ||
+            "Failed to load monthly tax detail"
+        );
+
+        navigate("/taxes/monthly");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDetail();
+  }, [id, year, month, navigate]);
 
   const handleChange = (index, field, value) => {
     const updated = [...taxes];
 
     updated[index][field] = value;
 
-    if (field === "status" && value === "NOT_REQUIRED") {
+    if (field === "status" && isDateDisabled(value)) {
       updated[index].submittedDate = "";
     }
 
     setTaxes(updated);
   };
 
-  const isDateDisabled = (status) => {
-    return status === "NOT_REQUIRED" || status === "NOT_STARTED";
-  };
+  const isDateDisabled = (status) =>
+    status === "NOT_STARTED" ||
+    status === "WAITING_DOCS" ||
+    status === "WAITING_PAYMENT";
 
   const handleSave = async () => {
     const result = await Swal.fire({
@@ -85,13 +99,22 @@ export default function MonthlyTaxDetail() {
       cancelButtonColor: "#6b7280",
     });
 
-    if (result.isConfirmed) {
-      setSaving(true);
+    if (!result.isConfirmed) return;
 
-      // TODO: เรียก API จริงตรงนี้
-      await new Promise((res) => setTimeout(res, 500));
+    setSaving(true);
 
-      setSaving(false);
+    try {
+      await updateMonthlyTax(
+        id,
+        year,
+        month,
+        taxes.map((item) => ({
+          taxType: item.taxType,
+          status: item.status,
+          submittedAt: item.submittedDate || null,
+          remark: item.remark || null,
+        }))
+      );
 
       await Swal.fire({
         title: "Saved!",
@@ -101,20 +124,37 @@ export default function MonthlyTaxDetail() {
       });
 
       navigate("/taxes/monthly");
+    } catch (err) {
+      showError(
+        err.response?.data?.message ||
+          "Failed to save monthly tax"
+      );
+    } finally {
+      setSaving(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="py-10 text-center text-slate-500">
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <Breadcrumb
         items={[
           { label: "Monthly Tax", to: "/taxes/monthly" },
-          
-          { label: `Customer ${id}` },
+          { label: customer?.name || `Customer ${id}` },
         ]}
       />
 
-      <PageHeader title="Monthly Tax Detail" description={`Record #${id}`} />
+      <PageHeader
+        title="Monthly Tax Detail"
+        description={`${customer?.name || ""}`}
+      />
 
       {/* Customer Information */}
       <div className="bg-white border rounded-2xl p-6 shadow-sm">
@@ -123,17 +163,21 @@ export default function MonthlyTaxDetail() {
         <div className="grid md:grid-cols-3 gap-6">
           <div>
             <p className="text-sm text-gray-500">Customer</p>
-            <p className="font-medium">ABC Co.,Ltd.</p>
+            <p className="font-medium">{customer?.name}</p>
           </div>
 
           <div>
             <p className="text-sm text-gray-500">Month / Year</p>
-            <p className="font-medium">05 / 2026</p>
+            <p className="font-medium">{month} / {year}</p>
           </div>
 
           <div>
             <p className="text-sm text-gray-500">Responsible</p>
-            <p className="font-medium">John Smith</p>
+            <p className="font-medium">
+              {responsible
+                ? `${responsible.firstName} ${responsible.lastName}`
+                : "-"}
+            </p>
           </div>
         </div>
       </div>
@@ -154,7 +198,7 @@ export default function MonthlyTaxDetail() {
             <tbody>
               {taxes.map((item, index) => (
                 <tr key={item.taxType} className="border-b hover:bg-slate-50">
-                  <td className="px-4 py-4 font-medium">{item.taxType}</td>
+                  <td className="px-4 py-4 font-medium">{item.label}</td>
 
                   <td className="px-4 py-4">
                     <select
@@ -164,10 +208,11 @@ export default function MonthlyTaxDetail() {
                       }
                       className="border rounded-lg px-3 py-2 bg-white"
                     >
-                      <option value="NOT_STARTED">NOT_STARTED</option>
-                      <option value="IN_PROGRESS">IN_PROGRESS</option>
-                      <option value="COMPLETED">COMPLETED</option>
-                      <option value="NOT_REQUIRED">NOT_REQUIRED</option>
+                      <option value="NOT_STARTED">Not Started</option>
+                      <option value="WAITING_DOCS">Waiting Docs</option>
+                      <option value="IN_PROGRESS">In Progress</option>
+                      <option value="WAITING_PAYMENT">Waiting Payment</option>
+                      <option value="COMPLETED">Completed</option>
                     </select>
                   </td>
 

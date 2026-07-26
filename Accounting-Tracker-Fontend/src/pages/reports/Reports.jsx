@@ -1,9 +1,46 @@
-import PageHeader from "../../components/common/PageHeader";
+import { useEffect, useState } from "react";
 
+import PageHeader from "../../components/common/PageHeader";
 import ReportCard from "../../components/reports/ReportCard";
 import ReportTable from "../../components/reports/ReportTable";
+import { getReports } from "../../api/reports.api";
+import { showError } from "../../utils/toast";
 
 export default function Reports() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        const result = await getReports();
+
+        setData(result.data);
+      } catch (err) {
+        showError(
+          err.response?.data?.message ||
+            "Failed to load reports"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReports();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="py-10 text-center text-slate-500">
+        Loading...
+      </div>
+    );
+  }
+
+  const now = new Date();
+  const monthLabel = now.toLocaleString("en-US", { month: "long" });
+  const yearLabel = now.getFullYear();
+
   return (
     <div className="space-y-6">
 
@@ -18,25 +55,25 @@ export default function Reports() {
 
         <ReportCard
           title="Total Customers"
-          value="120"
+          value={data?.summary.totalCustomers}
           subtitle="Active clients"
         />
 
         <ReportCard
           title="Monthly Tax Completed"
-          value="98"
-          subtitle="June 2026"
+          value={data?.summary.monthlyTaxCompleted}
+          subtitle={`${monthLabel} ${yearLabel}`}
         />
 
         <ReportCard
           title="Annual Tax Completed"
-          value="75"
-          subtitle="Year 2026"
+          value={data?.summary.annualTaxCompleted}
+          subtitle={`Year ${yearLabel}`}
         />
 
         <ReportCard
           title="Pending Tasks"
-          value="18"
+          value={data?.summary.pendingTasks}
           subtitle="Need follow-up"
         />
 
@@ -51,11 +88,11 @@ export default function Reports() {
           "Month",
           "Status",
         ]}
-        data={[
-          ["ABC Co.,Ltd.", "June 2026", "Completed"],
-          ["XYZ Co.,Ltd.", "June 2026", "Pending"],
-          ["DEF Trading", "June 2026", "In Progress"],
-        ]}
+        data={(data?.monthlyTaxStatus || []).map((item) => [
+          item.customerName,
+          item.period,
+          item.status,
+        ])}
       />
 
       {/* Annual Tax */}
@@ -67,11 +104,11 @@ export default function Reports() {
           "Year",
           "Status",
         ]}
-        data={[
-          ["ABC Co.,Ltd.", "2026", "Completed"],
-          ["XYZ Co.,Ltd.", "2026", "In Progress"],
-          ["DEF Trading", "2026", "Pending"],
-        ]}
+        data={(data?.annualTaxStatus || []).map((item) => [
+          item.customerName,
+          item.period,
+          item.status,
+        ])}
       />
 
       {/* Staff */}
@@ -83,11 +120,11 @@ export default function Reports() {
           "Assigned",
           "Completed",
         ]}
-        data={[
-          ["John Smith", "30", "24"],
-          ["Jane Doe", "28", "26"],
-          ["Admin", "15", "12"],
-        ]}
+        data={(data?.staffWorkload || []).map((item) => [
+          item.staffName,
+          item.assigned,
+          item.completed,
+        ])}
       />
 
     </div>

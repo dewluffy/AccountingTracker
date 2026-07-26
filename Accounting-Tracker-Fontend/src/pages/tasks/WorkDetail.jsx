@@ -1,34 +1,96 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 
 import PageHeader from "../../components/common/PageHeader";
 import Breadcrumb from "../../components/common/Breadcrumb";
 import WorkStatusCard from "../../components/work/WorkStatusCard";
 import Button from "../../components/common/Button";
-import Swal from "sweetalert2";
+import { getWorkByCustomer, updateWork } from "../../api/work.api";
+import { showError } from "../../utils/toast";
 
 export default function WorkDetail() {
-  const { customerId } = useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
 
-  const [expense, setExpense] = useState({
-    month: 5,
-    year: 2026,
-    status: "COMPLETED",
-  });
+  const [customer, setCustomer] = useState(null);
+  const [expense, setExpense] = useState({});
+  const [income, setIncome] = useState({});
+  const [bank, setBank] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const [income, setIncome] = useState({
-    month: 5,
-    year: 2026,
-    status: "IN_PROGRESS",
-  });
+  useEffect(() => {
+    const fetchDetail = async () => {
+      try {
+        const result = await getWorkByCustomer(id);
 
-  const [bank, setBank] = useState({
-    month: 4,
-    year: 2026,
-    status: "PENDING",
-  });
+        setCustomer(result.data.customer);
+        setExpense(result.data.expense);
+        setIncome(result.data.income);
+        setBank(result.data.bank);
+      } catch (err) {
+        showError(
+          err.response?.data?.message ||
+            "Failed to load work detail"
+        );
+
+        navigate("/tasks");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDetail();
+  }, [id, navigate]);
+
+  const handleSave = () => {
+    Swal.fire({
+      title: "ยืนยันการบันทึก?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "ตกลง",
+      cancelButtonText: "ยกเลิก",
+      confirmButtonColor: "#2563eb",
+      cancelButtonColor: "#dc2626",
+    }).then((result) => {
+      if (!result.isConfirmed) return;
+
+      setSaving(true);
+
+      updateWork(id, { expense, income, bank })
+        .then(() => {
+          Swal.fire({
+            title: "สำเร็จ",
+            icon: "success",
+            timer: 1000,
+            showConfirmButton: false,
+          });
+
+          setTimeout(() => {
+            navigate("/tasks");
+          }, 1000);
+        })
+        .catch((err) => {
+          showError(
+            err.response?.data?.message ||
+              "Failed to save work detail"
+          );
+        })
+        .finally(() => {
+          setSaving(false);
+        });
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="py-10 text-center text-slate-500">
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -40,7 +102,7 @@ export default function WorkDetail() {
             to: "/tasks",
           },
           {
-            label: `Customer #${customerId}`,
+            label: customer?.name || `Customer #${id}`,
           },
         ]}
       />
@@ -73,62 +135,19 @@ export default function WorkDetail() {
       </div>
 
       {/* Save Button */}
-      <div className="flex justify-end">
-        <div className="flex justify-end gap-3">
-          {/* Cancel / Back */}
-          <Button
-            type="button"
-            onClick={() => navigate("/tasks")}
-            className="
-      px-5 py-3
-      bg-red-600 text-white
-      rounded-xl
-      hover:bg-red-700
-      transition
-      cursor-pointer
-    "
-          >
-            Cancel
-          </Button>
+      <div className="flex justify-end gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => navigate("/tasks")}
+          disabled={saving}
+        >
+          Cancel
+        </Button>
 
-          {/* Save */}
-          <Button
-            onClick={() => {
-              Swal.fire({
-                title: "ยืนยันการบันทึก?",
-                icon: "question",
-                showCancelButton: true,
-                confirmButtonText: "ตกลง",
-                cancelButtonText: "ยกเลิก",
-                confirmButtonColor: "#2563eb",
-                cancelButtonColor: "#dc2626",
-              }).then((result) => {
-                if (result.isConfirmed) {
-                  Swal.fire({
-                    title: "สำเร็จ",
-                    icon: "success",
-                    timer: 1000,
-                    showConfirmButton: false,
-                  });
-
-                  setTimeout(() => {
-                    navigate("/tasks");
-                  }, 1000);
-                }
-              });
-            }}
-            className="
-      px-5 py-3
-      bg-blue-600 text-white
-      rounded-xl
-      hover:bg-blue-700
-      transition
-      cursor-pointer
-    "
-          >
-            Save Changes
-          </Button>
-        </div>
+        <Button onClick={handleSave} disabled={saving}>
+          {saving ? "Saving..." : "Save Changes"}
+        </Button>
       </div>
     </div>
   );
