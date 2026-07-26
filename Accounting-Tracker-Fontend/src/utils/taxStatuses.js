@@ -1,0 +1,7 @@
+export const TAX_STATUSES = [
+  "NOT_STARTED",
+  "WAITING_DOCS",
+  "IN_PROGRESS",
+  "WAITING_PAYMENT",
+  "COMPLETED",
+];

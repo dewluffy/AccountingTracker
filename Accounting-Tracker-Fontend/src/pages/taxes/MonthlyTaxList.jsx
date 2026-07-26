@@ -1,75 +1,66 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaSearch } from "react-icons/fa";
 
 import PageHeader from "../../components/common/PageHeader";
-import StatusBadge from "../../components/common/StatusBadge";
+import StatusDot from "../../components/common/StatusDot";
+import StatusLegend from "../../components/common/StatusLegend";
 import Button from "../../components/common/Button";
-import Breadcrumb from "../../components/common/Breadcrumb";
+import { getMonthlyTaxGrid } from "../../api/monthlyTax.api";
+import { MONTHLY_TAX_TYPES } from "../../utils/monthlyTaxTypes";
+import { TAX_STATUSES } from "../../utils/taxStatuses";
+import { showError } from "../../utils/toast";
 
 export default function MonthlyTaxList() {
   const navigate = useNavigate();
 
-  const [month, setMonth] = useState("05");
-  const [year, setYear] = useState("2026");
+  const now = new Date();
+
+  const [month, setMonth] = useState(
+    String(now.getMonth() + 1).padStart(2, "0")
+  );
+  const [year, setYear] = useState(String(now.getFullYear()));
   const [search, setSearch] = useState("");
 
-  const taxes = [
-    {
-      id: 1,
-      customer: "ABC Co.,Ltd.",
-      responsible: "John Smith",
-      pnd1: "COMPLETED",
-      pnd3: "COMPLETED",
-      pnd53: "COMPLETED",
-      pnd54: "NOT_REQUIRED",
-      pp30: "COMPLETED",
-      pp36: "NOT_REQUIRED",
-      sso: "COMPLETED",
-    },
-    {
-      id: 2,
-      customer: "XYZ Co.,Ltd.",
-      responsible: "Jane Doe",
-      pnd1: "IN_PROGRESS",
-      pnd3: "COMPLETED",
-      pnd53: "PENDING",
-      pnd54: "NOT_REQUIRED",
-      pp30: "PENDING",
-      pp36: "NOT_REQUIRED",
-      sso: "COMPLETED",
-    },
-    {
-      id: 3,
-      customer: "DEF Trading",
-      responsible: "Admin",
-      pnd1: "NOT_REQUIRED",
-      pnd3: "COMPLETED",
-      pnd53: "COMPLETED",
-      pnd54: "NOT_REQUIRED",
-      pp30: "COMPLETED",
-      pp36: "NOT_REQUIRED",
-      sso: "NOT_REQUIRED",
-    },
-  ];
+  const [grid, setGrid] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = taxes.filter((t) =>
-    t.customer.toLowerCase().includes(search.toLowerCase())
+  useEffect(() => {
+    const fetchGrid = async () => {
+      try {
+        setLoading(true);
+
+        const result = await getMonthlyTaxGrid(year, month);
+
+        setGrid(result.data.grid);
+      } catch (err) {
+        showError(
+          err.response?.data?.message ||
+            "Failed to load monthly tax data"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGrid();
+  }, [year, month]);
+
+  const filtered = grid.filter((item) =>
+    item.customerName.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div className="space-y-6">
-      {/* <Breadcrumb
-        items={[
-          { label: "Dashboard", path: "/" },
-          { label: "Monthly Tax" },
-        ]}
-      /> */}
-
       <PageHeader
         title="Monthly Tax Filing"
         description="Track monthly tax submission status"
       />
+
+      {/* Legend */}
+      <div className="bg-white border rounded-2xl p-5 shadow-sm">
+        <StatusLegend statuses={TAX_STATUSES} />
+      </div>
 
       {/* Filter */}
       <div className="bg-white border rounded-2xl p-5 shadow-sm">
@@ -125,55 +116,70 @@ export default function MonthlyTaxList() {
       {/* Table */}
       <div className="bg-white border rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1500px]">
+          <table className="w-full min-w-[1100px]">
             <thead>
               <tr className="bg-slate-50 border-b">
                 <th className="px-4 py-4 text-left">#</th>
                 <th className="px-4 py-4 text-left">Customer</th>
                 <th className="px-4 py-4 text-left">Responsible</th>
-                <th className="px-4 py-4 text-center">ภงด.1</th>
-                <th className="px-4 py-4 text-center">ภงด.3</th>
-                <th className="px-4 py-4 text-center">ภงด.53</th>
-                <th className="px-4 py-4 text-center">ภงด.54</th>
-                <th className="px-4 py-4 text-center">ภพ.30</th>
-                <th className="px-4 py-4 text-center">ภพ.36</th>
-                <th className="px-4 py-4 text-center">SSO</th>
+                {MONTHLY_TAX_TYPES.map(({ taxType, label }) => (
+                  <th key={taxType} className="px-4 py-4 text-center">
+                    {label}
+                  </th>
+                ))}
                 <th className="px-4 py-4 text-center">Action</th>
               </tr>
             </thead>
 
             <tbody>
-              {filtered.length > 0 ? (
+              {loading ? (
+                <tr>
+                  <td
+                    colSpan={4 + MONTHLY_TAX_TYPES.length}
+                    className="px-4 py-10 text-center text-gray-400"
+                  >
+                    Loading...
+                  </td>
+                </tr>
+              ) : filtered.length > 0 ? (
                 filtered.map((item, index) => (
-                  <tr key={item.id} className="border-b hover:bg-slate-50">
+                  <tr
+                    key={item.customerId}
+                    className="border-b hover:bg-slate-50"
+                  >
                     <td className="px-4 py-4">{index + 1}</td>
-                    <td className="px-4 py-4 font-medium">{item.customer}</td>
-                    <td className="px-4 py-4">{item.responsible}</td>
-                    <td className="px-4 py-4 text-center">
-                      <StatusBadge status={item.pnd1} />
+                    <td className="px-4 py-4 font-medium">
+                      {item.customerName}
                     </td>
-                    <td className="px-4 py-4 text-center">
-                      <StatusBadge status={item.pnd3} />
+                    <td className="px-4 py-4">
+                      {item.responsible
+                        ? `${item.responsible.firstName} ${item.responsible.lastName}`
+                        : "-"}
                     </td>
-                    <td className="px-4 py-4 text-center">
-                      <StatusBadge status={item.pnd53} />
-                    </td>
-                    <td className="px-4 py-4 text-center">
-                      <StatusBadge status={item.pnd54} />
-                    </td>
-                    <td className="px-4 py-4 text-center">
-                      <StatusBadge status={item.pp30} />
-                    </td>
-                    <td className="px-4 py-4 text-center">
-                      <StatusBadge status={item.pp36} />
-                    </td>
-                    <td className="px-4 py-4 text-center">
-                      <StatusBadge status={item.sso} />
-                    </td>
+
+                    {MONTHLY_TAX_TYPES.map(({ taxType }) => {
+                      const tax = item.taxes.find(
+                        (t) => t.taxType === taxType
+                      );
+
+                      return (
+                        <td
+                          key={taxType}
+                          className="px-4 py-4 text-center"
+                        >
+                          <StatusDot status={tax?.status} />
+                        </td>
+                      );
+                    })}
+
                     <td className="px-4 py-4 text-center">
                       <Button
                         size="sm"
-                        onClick={() => navigate(`/taxes/monthly/${item.id}`)}
+                        onClick={() =>
+                          navigate(
+                            `/taxes/monthly/${item.customerId}?year=${year}&month=${month}`
+                          )
+                        }
                       >
                         Update
                       </Button>
@@ -183,7 +189,7 @@ export default function MonthlyTaxList() {
               ) : (
                 <tr>
                   <td
-                    colSpan={11}
+                    colSpan={4 + MONTHLY_TAX_TYPES.length}
                     className="px-4 py-10 text-center text-gray-400"
                   >
                     No customers found

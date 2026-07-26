@@ -25,8 +25,8 @@ export default function Login() {
       const result = await actionLogin(data);
 
       login({
-        token: result.token,
-        user: result.user,
+        token: result.data.token,
+        user: result.data.user,
       });
 
       Swal.fire({

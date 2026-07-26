@@ -1,51 +1,81 @@
+import { useEffect, useState } from "react";
+
 import StatCard from "../../components/dashboard/StatCard";
 import SectionCard from "../../components/dashboard/SectionCard";
 import SimpleTable from "../../components/dashboard/SimpleTable";
 import ChartPlaceholder from "../../components/dashboard/ChartPlaceholder";
+import { getDashboard } from "../../api/dashboard.api";
+import { showError } from "../../utils/toast";
 
 export default function Dashboard() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const result = await getDashboard();
+
+        setData(result.data);
+      } catch (err) {
+        showError(
+          err.response?.data?.message ||
+            "Failed to load dashboard"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboard();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="py-10 text-center text-slate-500">
+        Loading...
+      </div>
+    );
+  }
+
   const stats = [
     {
       title: "ลูกค้าทั้งหมด",
-      value: 120,
+      value: data?.stats.totalCustomers ?? 0,
       subtitle: "Active Customers",
     },
     {
-      title: "ภาษีค้างยื่น",
-      value: 15,
-      subtitle: "Pending Submission",
+      title: "ภาษีรายเดือนค้างยื่น",
+      value: data?.stats.pendingMonthlyTax ?? 0,
+      subtitle: "Pending This Month",
+    },
+    {
+      title: "ภาษีประจำปีค้างยื่น",
+      value: data?.stats.pendingAnnualTax ?? 0,
+      subtitle: "Pending This Year",
     },
     {
       title: "งานค้าง",
-      value: 23,
-      subtitle: "Open Tasks",
-    },
-    {
-      title: "Overdue",
-      value: 4,
-      subtitle: "Need Attention",
+      value: data?.stats.currentTasks ?? 0,
+      subtitle: "Open Work Items",
     },
   ];
 
-  const dueTasks = [
-    ["ABC Co.,Ltd.", "ภ.พ.30", "15 มิ.ย. 2026"],
-    ["XYZ Co.,Ltd.", "ภ.ง.ด.53", "16 มิ.ย. 2026"],
-    ["DEF Co.,Ltd.", "ประกันสังคม", "18 มิ.ย. 2026"],
-  ];
+  const dueTasks = (data?.pendingThisMonth || []).map((item) => [
+    item.customerName,
+    item.taxType,
+    item.period,
+  ]);
 
-  const myTasks = [
-    ["ABC Co.,Ltd.", "กระทบธนาคาร"],
-    ["XYZ Co.,Ltd.", "รายได้"],
-    ["LMN Co.,Ltd.", "ค่าใช้จ่าย"],
-  ];
+  const myTasks = (data?.myTasks || []).map((item) => [
+    item.customerName,
+    item.section,
+  ]);
 
-  const topCustomers = [
-    ["ABC Co.,Ltd.", 8],
-    ["XYZ Co.,Ltd.", 6],
-    ["DEF Co.,Ltd.", 5],
-    ["AAA Co.,Ltd.", 4],
-    ["BBB Co.,Ltd.", 3],
-  ];
+  const topCustomers = (data?.topCustomers || []).map((item) => [
+    item.customerName,
+    item.pendingCount,
+  ]);
 
   return (
     <div className="space-y-6">
@@ -87,12 +117,12 @@ export default function Dashboard() {
           xl:grid-cols-2
         "
       >
-        <SectionCard title="งานที่ใกล้ครบกำหนด">
+        <SectionCard title="งานที่ยังไม่เสร็จเดือนนี้">
           <SimpleTable
             headers={[
               "ลูกค้า",
               "รายการ",
-              "กำหนดส่ง",
+              "งวด",
             ]}
             rows={dueTasks}
           />

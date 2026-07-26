@@ -54,3 +54,13 @@ export const authMiddleware = async (req, res, next) => {
     next(error);
   }
 };
+
+export const requireRole = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user?.role)) {
+      return next(createError(403, "Forbidden: insufficient permissions"));
+    }
+
+    next();
+  };
+};

@@ -1,47 +1,78 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+import Button from "../common/Button";
+import { getUsers } from "../../api/user.api";
 
 export default function CustomerForm({
   initialData = {},
   onSubmit,
 }) {
+  const navigate = useNavigate();
+
   const [form, setForm] = useState({
     code: initialData.code || "",
     name: initialData.name || "",
     taxId: initialData.taxId || "",
-    businessType:
-      initialData.businessType || "",
 
     phone: initialData.phone || "",
     email: initialData.email || "",
-
     address: initialData.address || "",
 
-    primaryStaff:
-      initialData.primaryStaff || "",
+    status: initialData.status || "ACTIVE",
 
-    secondaryStaff:
-      initialData.secondaryStaff || "",
-
-    status:
-      initialData.status || "Active",
-
-    remark: initialData.remark || "",
+    primaryStaffId: initialData.primaryStaffId
+      ? String(initialData.primaryStaffId)
+      : "",
+    secondaryStaffId: initialData.secondaryStaffId
+      ? String(initialData.secondaryStaffId)
+      : "",
   });
+
+  const [staffOptions, setStaffOptions] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const fetchStaff = async () => {
+      try {
+        const result = await getUsers();
+
+        setStaffOptions(
+          result.data.users.filter((user) => user.isActive)
+        );
+      } catch {
+        setStaffOptions([]);
+      }
+    };
+
+    fetchStaff();
+  }, []);
 
   const handleChange = (e) => {
     setForm({
       ...form,
-      [e.target.name]:
-        e.target.value,
+      [e.target.name]: e.target.value,
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    console.log(form);
+    setIsSubmitting(true);
 
-    onSubmit?.(form);
+    try {
+      await onSubmit?.({
+        ...form,
+        primaryStaffId: form.primaryStaffId
+          ? Number(form.primaryStaffId)
+          : null,
+        secondaryStaffId: form.secondaryStaffId
+          ? Number(form.secondaryStaffId)
+          : null,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -99,22 +130,6 @@ export default function CustomerForm({
             <input
               name="taxId"
               value={form.taxId}
-              onChange={handleChange}
-              className="
-                w-full border rounded-xl
-                px-4 py-3
-              "
-            />
-          </div>
-
-          <div>
-            <label className="block mb-2 text-sm font-medium">
-              Business Type
-            </label>
-
-            <input
-              name="businessType"
-              value={form.businessType}
               onChange={handleChange}
               className="
                 w-full border rounded-xl
@@ -190,7 +205,7 @@ export default function CustomerForm({
 
       </div>
 
-      {/* Assignment */}
+      {/* Assigned Staff */}
 
       <div className="bg-white border rounded-2xl p-6">
 
@@ -205,15 +220,28 @@ export default function CustomerForm({
               Primary Staff
             </label>
 
-            <input
-              name="primaryStaff"
-              value={form.primaryStaff}
+            <select
+              name="primaryStaffId"
+              value={form.primaryStaffId}
               onChange={handleChange}
               className="
                 w-full border rounded-xl
                 px-4 py-3
               "
-            />
+            >
+              <option value="">-- Not assigned --</option>
+
+              {staffOptions
+                .filter(
+                  (user) =>
+                    String(user.id) !== form.secondaryStaffId
+                )
+                .map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.firstName} {user.lastName}
+                  </option>
+                ))}
+            </select>
           </div>
 
           <div>
@@ -221,15 +249,28 @@ export default function CustomerForm({
               Secondary Staff
             </label>
 
-            <input
-              name="secondaryStaff"
-              value={form.secondaryStaff}
+            <select
+              name="secondaryStaffId"
+              value={form.secondaryStaffId}
               onChange={handleChange}
               className="
                 w-full border rounded-xl
                 px-4 py-3
               "
-            />
+            >
+              <option value="">-- Not assigned --</option>
+
+              {staffOptions
+                .filter(
+                  (user) =>
+                    String(user.id) !== form.primaryStaffId
+                )
+                .map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.firstName} {user.lastName}
+                  </option>
+                ))}
+            </select>
           </div>
 
         </div>
@@ -260,11 +301,11 @@ export default function CustomerForm({
                 px-4 py-3
               "
             >
-              <option>
+              <option value="ACTIVE">
                 Active
               </option>
 
-              <option>
+              <option value="INACTIVE">
                 Inactive
               </option>
 
@@ -273,50 +314,24 @@ export default function CustomerForm({
 
         </div>
 
-        <div className="mt-6">
-
-          <label className="block mb-2 text-sm font-medium">
-            Remark
-          </label>
-
-          <textarea
-            rows="4"
-            name="remark"
-            value={form.remark}
-            onChange={handleChange}
-            className="
-              w-full border rounded-xl
-              px-4 py-3
-            "
-          />
-
-        </div>
-
       </div>
 
       <div className="flex justify-end gap-3">
 
-        <button
+        <Button
           type="button"
-          className="
-            px-5 py-3
-            border rounded-xl
-          "
+          variant="outline"
+          onClick={() => navigate(-1)}
         >
           Cancel
-        </button>
+        </Button>
 
-        <button
+        <Button
           type="submit"
-          className="
-            px-5 py-3
-            bg-blue-600
-            text-white
-            rounded-xl
-          "
+          disabled={isSubmitting}
         >
-          Save Customer
-        </button>
+          {isSubmitting ? "Saving..." : "Save Customer"}
+        </Button>
 
       </div>
 

@@ -6,14 +6,15 @@ import {
 } from "react-icons/fa";
 
 import { Link } from "react-router-dom";
-import { showSuccess } from "../../utils/toast";
-import { useState } from "react";
+import { showSuccess, showError } from "../../utils/toast";
+import { useEffect, useState } from "react";
 
 import PageHeader from "../../components/common/PageHeader";
 import SearchInput from "../../components/common/SearchInput";
 import StatusBadge from "../../components/common/StatusBadge";
 import EmptyState from "../../components/common/EmptyState";
 import ConfirmModal from "../../components/common/ConfirmModal";
+import { getCustomers, deleteCustomer } from "../../api/customer.api";
 
 export default function CustomerList() {
   const [openDelete, setOpenDelete] =
@@ -22,34 +23,31 @@ export default function CustomerList() {
   const [selectedCustomer, setSelectedCustomer] =
     useState(null);
 
-  const [customers, setCustomers] = useState([
-    {
-      id: 1,
-      code: "C001",
-      name: "ABC Co.,Ltd.",
-      taxId: "0105551234567",
-      staff: "John Smith",
-      status: "Active",
-    },
-    {
-      id: 2,
-      code: "C002",
-      name: "XYZ Co.,Ltd.",
-      taxId: "0105559876543",
-      staff: "Jane Doe",
-      status: "Active",
-    },
-    {
-      id: 3,
-      code: "C003",
-      name: "DEF Trading",
-      taxId: "0105557777777",
-      staff: "Admin",
-      status: "Inactive",
-    },
-  ]);
+  const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        setLoading(true);
+
+        const result = await getCustomers();
+
+        setCustomers(result.data.customers);
+      } catch (err) {
+        showError(
+          err.response?.data?.message ||
+            "Failed to load customers"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCustomers();
+  }, []);
 
   const filteredCustomers = customers.filter(
     (customer) =>
@@ -67,21 +65,30 @@ export default function CustomerList() {
     setOpenDelete(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     const customerName = selectedCustomer?.name;
 
-    setCustomers((prev) =>
-      prev.filter(
-        (item) => item.id !== selectedCustomer.id
-      )
-    );
+    try {
+      await deleteCustomer(selectedCustomer.id);
 
-    showSuccess(
-      `${customerName} deleted successfully`
-    );
+      setCustomers((prev) =>
+        prev.filter(
+          (item) => item.id !== selectedCustomer.id
+        )
+      );
 
-    setOpenDelete(false);
-    setSelectedCustomer(null);
+      showSuccess(
+        `${customerName} deleted successfully`
+      );
+    } catch (err) {
+      showError(
+        err.response?.data?.message ||
+          "Failed to delete customer"
+      );
+    } finally {
+      setOpenDelete(false);
+      setSelectedCustomer(null);
+    }
   };
 
 
@@ -116,16 +123,14 @@ export default function CustomerList() {
               setSearch(e.target.value)
             }
           />
-          {/* <div className="px-6 py-3 bg-slate-50 border-b text-sm text-slate-500">
-            Total Customers :
-            <span className="font-semibold ml-2">
-              {filteredCustomers.length}
-            </span>
-          </div> */}
         </div>
 
         {
-          filteredCustomers.length === 0 ? (
+          loading ? (
+            <div className="py-10 text-center text-slate-500">
+              Loading...
+            </div>
+          ) : filteredCustomers.length === 0 ? (
             <EmptyState
               title="No Customers Found"
               description={
@@ -202,7 +207,9 @@ export default function CustomerList() {
                       </td>
 
                       <td className="px-6 py-4">
-                        {customer.staff}
+                        {customer.assignments?.[0]
+                          ? `${customer.assignments[0].user.firstName} ${customer.assignments[0].user.lastName}`
+                          : "-"}
                       </td>
 
                       <td className="px-6 py-4">
