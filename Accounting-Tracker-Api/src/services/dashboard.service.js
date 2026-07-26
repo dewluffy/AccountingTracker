@@ -147,6 +147,27 @@ export const getDashboardService = async (currentUserId) => {
     .sort((a, b) => b.pendingCount - a.pendingCount)
     .slice(0, 5);
 
+  const workStatusCounts = {
+    PENDING: 0,
+    IN_PROGRESS: 0,
+    COMPLETED: 0,
+    WAITING: 0,
+  };
+
+  for (const row of workRows) {
+    for (const status of [
+      row.expenseStatus,
+      row.incomeStatus,
+      row.bankStatus,
+    ]) {
+      workStatusCounts[status] = (workStatusCounts[status] || 0) + 1;
+    }
+  }
+
+  const workStatusBreakdown = Object.entries(workStatusCounts).map(
+    ([status, count]) => ({ status, count })
+  );
+
   return {
     stats: {
       totalCustomers,
@@ -159,7 +180,8 @@ export const getDashboardService = async (currentUserId) => {
       taxType: TAX_TYPE_LABELS[item.taxType] || item.taxType,
       period: `${String(item.month).padStart(2, "0")}/${item.year}`,
     })),
-    myTasks: myTasks.slice(0, 5),
+    myTasks,
     topCustomers,
+    workStatusBreakdown,
   };
 };

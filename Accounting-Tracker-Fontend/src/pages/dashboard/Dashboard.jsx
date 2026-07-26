@@ -1,15 +1,19 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 import StatCard from "../../components/dashboard/StatCard";
 import SectionCard from "../../components/dashboard/SectionCard";
 import SimpleTable from "../../components/dashboard/SimpleTable";
-import ChartPlaceholder from "../../components/dashboard/ChartPlaceholder";
+import MonthlyStatusChart from "../../components/dashboard/MonthlyStatusChart";
 import { getDashboard } from "../../api/dashboard.api";
 import { showError } from "../../utils/toast";
+
+const MY_TASKS_PREVIEW_COUNT = 5;
 
 export default function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showAllMyTasks, setShowAllMyTasks] = useState(false);
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -67,10 +71,14 @@ export default function Dashboard() {
     item.period,
   ]);
 
-  const myTasks = (data?.myTasks || []).map((item) => [
+  const allMyTasks = (data?.myTasks || []).map((item) => [
     item.customerName,
     item.section,
   ]);
+
+  const myTasks = showAllMyTasks
+    ? allMyTasks
+    : allMyTasks.slice(0, MY_TASKS_PREVIEW_COUNT);
 
   const topCustomers = (data?.topCustomers || []).map((item) => [
     item.customerName,
@@ -117,7 +125,17 @@ export default function Dashboard() {
           xl:grid-cols-2
         "
       >
-        <SectionCard title="งานที่ยังไม่เสร็จเดือนนี้">
+        <SectionCard
+          title="งานที่ยังไม่เสร็จเดือนนี้"
+          action={
+            <Link
+              to="/taxes/monthly"
+              className="text-sm text-blue-600 hover:underline whitespace-nowrap"
+            >
+              View All
+            </Link>
+          }
+        >
           <SimpleTable
             headers={[
               "ลูกค้า",
@@ -136,12 +154,23 @@ export default function Dashboard() {
             ]}
             rows={myTasks}
           />
+
+          {allMyTasks.length > MY_TASKS_PREVIEW_COUNT && (
+            <button
+              onClick={() => setShowAllMyTasks((prev) => !prev)}
+              className="mt-3 text-sm text-blue-600 hover:underline"
+            >
+              {showAllMyTasks
+                ? "Show Less"
+                : `Show All (${allMyTasks.length})`}
+            </button>
+          )}
         </SectionCard>
       </div>
 
       {/* Chart */}
       <SectionCard title="กราฟสถานะงานรายเดือน">
-        <ChartPlaceholder />
+        <MonthlyStatusChart data={data?.workStatusBreakdown || []} />
       </SectionCard>
 
       {/* Top Customers */}
