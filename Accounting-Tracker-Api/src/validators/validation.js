@@ -39,9 +39,12 @@ export const createCustomerSchema = z.object({
 
 const MONTHLY_TAX_TYPES = [
   "VAT_PP30",
+  "VAT_PP36",
   "WHT_PND1",
   "WHT_PND3",
   "WHT_PND53",
+  "WHT_PND54",
+  "SBT_PT40",
   "SSO",
 ];
 

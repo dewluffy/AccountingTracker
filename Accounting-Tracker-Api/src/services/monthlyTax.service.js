@@ -2,7 +2,16 @@ import prisma from "../config/prisma.js";
 import { createError } from "../utils/createError.js";
 import { logActivity } from "./activityLog.service.js";
 
-const TAX_TYPES = ["WHT_PND1", "WHT_PND3", "WHT_PND53", "VAT_PP30", "SSO"];
+const TAX_TYPES = [
+  "WHT_PND1",
+  "WHT_PND3",
+  "WHT_PND53",
+  "WHT_PND54",
+  "VAT_PP30",
+  "VAT_PP36",
+  "SBT_PT40",
+  "SSO",
+];
 
 const ensureCustomerExists = async (customerId) => {
   const customer = await prisma.customer.findUnique({
