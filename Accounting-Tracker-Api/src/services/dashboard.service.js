@@ -4,7 +4,10 @@ const TAX_TYPE_LABELS = {
   WHT_PND1: "ภงด.1",
   WHT_PND3: "ภงด.3",
   WHT_PND53: "ภงด.53",
+  WHT_PND54: "ภงด.54",
   VAT_PP30: "ภพ.30",
+  VAT_PP36: "ภพ.36",
+  SBT_PT40: "ภธ.40",
   SSO: "ประกันสังคม",
 };
 
@@ -17,7 +20,13 @@ const WORK_SECTION_LABELS = {
 export const getDashboardService = async (currentUserId) => {
   const now = new Date();
   const year = now.getFullYear();
-  const month = now.getMonth() + 1;
+  const currentMonth = now.getMonth() + 1;
+
+  // Monthly tax filings are always for the prior month's period
+  // (e.g. the July period is filed in August), so "this month's"
+  // pending monthly tax work refers to last month's period.
+  const monthlyPeriodYear = currentMonth === 1 ? year - 1 : year;
+  const monthlyPeriodMonth = currentMonth === 1 ? 12 : currentMonth - 1;
 
   const [
     totalCustomers,
@@ -29,7 +38,11 @@ export const getDashboardService = async (currentUserId) => {
       where: { status: "ACTIVE" },
     }),
     prisma.monthlyTax.count({
-      where: { year, month, status: { not: "COMPLETED" } },
+      where: {
+        year: monthlyPeriodYear,
+        month: monthlyPeriodMonth,
+        status: { not: "COMPLETED" },
+      },
     }),
     prisma.annualTax.count({
       where: { year, status: { not: "COMPLETED" } },
@@ -46,7 +59,11 @@ export const getDashboardService = async (currentUserId) => {
   ]);
 
   const pendingMonthlyItems = await prisma.monthlyTax.findMany({
-    where: { year, month, status: { not: "COMPLETED" } },
+    where: {
+      year: monthlyPeriodYear,
+      month: monthlyPeriodMonth,
+      status: { not: "COMPLETED" },
+    },
     include: {
       customer: { select: { id: true, name: true } },
     },
@@ -96,7 +113,11 @@ export const getDashboardService = async (currentUserId) => {
       }),
       prisma.monthlyTax.groupBy({
         by: ["customerId"],
-        where: { year, month, status: { not: "COMPLETED" } },
+        where: {
+          year: monthlyPeriodYear,
+          month: monthlyPeriodMonth,
+          status: { not: "COMPLETED" },
+        },
         _count: { _all: true },
       }),
       prisma.annualTax.groupBy({
